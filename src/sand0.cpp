@@ -20,79 +20,81 @@ void print_command(String command)
 }
 bool check_command(String command)
 {
-	// D0-13 + A0-5 + +-?! on,off,read,toggle
 	command.toLowerCase();
-	if (!(command.charAt(0) == 'd' or command.charAt(0) == 'a'))
+	if (!isdigit(command[0]))
 		return false;
-	for (unsigned int i = 1; i < command.length(); i++)
-		if (!(command[i] == '+' or command[i] == '-' or command[i] == '?' or command[i] == '!' or command[i] == 0x0d or command[i] == 0x0a or isdigit(command[i])))
-			return false;
+
+	for (unsigned int i = 1; command[i] != 0x0d && command[i] != 0x0a; i++)
+	{
+		switch (command[i])
+		{
+		case '+':
+			if (!isdigit(command[i - 1]))
+				return false;
+			break;
+		case '-':
+			if (!isdigit(command[i - 1]))
+				return false;
+			break;
+		case '!':
+			if (!isdigit(command[i - 1]))
+				return false;
+			break;
+		case '?':
+			if (!isdigit(command[i - 1]))
+				return false;
+			break;
+		default:
+			if (!isDigit(command[i]))
+				return false;
+		}
+	}
+	Serial.println(command);
 	return true;
 }
 void execute()
 {
+	String port = "";
 	command.toLowerCase();
 
-	String port = "";
-	String state = "";
-
-	for (unsigned int i = 1; i < command.length(); i++)
-		if (!isDigit(command[i]))
+	for (unsigned int i = 0; command[i] != 0x0d && command[i] != 0x0a; i++)
+	{
+		if (isDigit(command[i]))
 		{
-			state = command[i];
+			port += command[i];
+			continue;
+			;
+		}
+		pinMode(port.toInt(), OUTPUT);
+
+		switch (command[i])
+		{
+		case '+':
+		{
+			digitalWrite(port.toInt(), HIGH);
 			break;
 		}
-		else
-			port += command[i];
-
-	pinMode(port.toInt(), OUTPUT);
-
-	if (state == "+")
-	{
-		if (command[0] == 'd')
-			digitalWrite(port.toInt(), HIGH);
-		if (command[0] == 'a')
-			analogWrite(port.toInt(), HIGH);
-		return;
-	}
-
-	if (state == "-")
-	{
-		if (command[0] == 'd')
+		case '-':
+		{
 			digitalWrite(port.toInt(), LOW);
-		if (command[0] == 'a')
-			analogWrite(port.toInt(), LOW);
-		return;
-	}
+			break;
+		}
+		case '!':
+		{
+			if (digitalRead(port.toInt()) == HIGH)
+				digitalWrite(port.toInt(), LOW);
+			else
+				digitalWrite(port.toInt(), HIGH);
+			break;
+		}
+		case '?':
+		{
 
-	if (state == "!")
-	{
-		if (command[0] == 'd')
-		{
-			if (digitalRead(port.toInt()) == HIGH)
-			{
-				digitalWrite(port.toInt(), LOW);
-				return;
-			}
-			digitalWrite(port.toInt(), HIGH);
-		}
-		if (command[0] == 'a')
-		{
-			if (digitalRead(port.toInt()) == HIGH)
-			{
-				digitalWrite(port.toInt(), LOW);
-				return;
-			}
-			digitalWrite(port.toInt(), HIGH);
-		}
-		return;
-	}
-	if (state == "?")
-	{
-		if (command[0] == 'd')
-			Serial.println(digitalRead(port.toInt()));
-		if (command[0] == 'a')
 			Serial.println(analogRead(port.toInt()));
+			break;
+		}
+		}
+		port = "";
 	}
 }
 void setup()
