@@ -89,7 +89,7 @@ void execute()
 		}
 		case '?':
 		{
-
+			pinMode(port.toInt(), INPUT);
 			Serial.println(analogRead(port.toInt()));
 			break;
 		}
